@@ -1,0 +1,53 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "dex.name" . }}
+  namespace: {{ .Release.Namespace  }}
+data:
+  config.yaml: |
+{{ if .Values.issuerURL }}
+    issuer: {{ .Values.issuerURL }}
+{{ else }}
+    issuer: https://{{  required "'ingress.host' must be defined" .Values.ingress.host}}/dex
+{{ end }}
+    storage:
+    {{- toYaml .Values.storage | nindent 6}}
+    web:
+      http: 0.0.0.0:5556
+    logger:
+      level: {{ .Values.logger.level }}
+    oauth2:
+      skipApprovalScreen: true
+
+    connectors:
+    {{- toYaml .Values.connectors | nindent 6}}
+
+    staticClients:
+    {{- if .Values.firstStaticClient.id}}
+    {{- with .Values.firstStaticClient }}
+      - name: {{ .name }}
+        id: {{ .id }}
+        redirectURIs: {{ .redirectURIs }}
+        secretEnv: CLIENT_SECRET_{{ .id | upper | replace "-" "_" }}
+    {{- end }}
+    {{- end }}
+    {{- if .Values.staticClients }}
+      {{- range .Values.staticClients }}
+      - name: {{ .name }}
+        id: {{ .id }}
+        redirectURIs: {{ .redirectURIs }}
+        secretEnv: CLIENT_SECRET_{{ .id | upper | replace "-" "_" }}
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.rawStaticClients }}    # To be removed. Waiting for dexcliop
+      {{- range .Values.rawStaticClients }}
+      - name: {{ .name }}
+        id: {{ .id }}
+        redirectURIs:
+        {{- range .redirectURIs }}
+          - {{ . }}
+        {{- end }}
+        secret: {{ .secret }}
+      {{- end }}
+    {{- end }}

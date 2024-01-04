@@ -1,0 +1,44 @@
+kyverno:
+  namespace: # Set to the kyverno namespace if kyverno is installed. Leave blank if not
+jupyterhub:
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: cluster-issuer1
+    hosts:
+      - jupyter.space1.ingress.mycluster.mydomain.internal
+    tls:
+      - hosts:
+          - jupyter.space1.ingress.mycluster.mydomain.internal
+        secretName: jupyterhub-tls
+  singleuser:
+    storage:
+      dynamic:
+        storageClass: longhorn
+      capacity: 1Gi
+    image:
+      name: quay.io/jupyterhub/k8s-singleuser-sample
+      tag: 3.2.1
+      pullPolicy: IfNotPresent
+  hub:
+    config:
+      GenericOAuthenticator:
+        oauth_callback_url: https://jupyter.space1.ingress.mycluster.mydomain.internal/hub/oauth_callback
+        authorize_url: https://dex.jupyter.space1.ingress.mycluster.mydomain.internal/dex/auth
+        token_url: https://dex.jupyter.space1.ingress.mycluster.mydomain.internal/dex/token
+        userdata_url: https://dex.jupyter.space1.ingress.mycluster.mydomain.internal/dex/userinfo
+        admin_groups:
+          - space1-admin
+        allowed_groups:
+          - space1-jupyter
+dex:
+  ingress:
+    host: dex.jupyter.space1.ingress.mycluster.mydomain.internal
+    clusterIssuer: cluster-issuer1
+  connectors:
+    # Place here your DEX connector configuration
+    - id: ....
+      config:
+        ...
+  firstStaticClient:
+    redirectURIs:
+      - https://jupyter.space1.ingress.mycluster.mydomain.internal/hub/oauth_callback

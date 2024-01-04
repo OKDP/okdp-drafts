@@ -1,0 +1,166 @@
+
+kyverno:
+  namespace: # Set to the kyverno namespace if kyverno is installed. Leave blank if not
+
+jupyterhub:
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: # TBD
+    ingressClassName: nginx
+    hosts: # TBD (As list)
+    #  - jupyter.instid.ingress.mycluster...
+    pathSuffix:
+    pathType: Prefix
+    tls:  # TBD (As list)
+    #  - secretName: jupyterhub-tls
+    #    hosts:
+    #    - jupyter.instid.ingress.mycluster
+  proxy:
+    service:
+      type: ClusterIP   # Was LoadBalancer
+    chp:
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+  hub:
+    config:
+      GenericOAuthenticator:
+        oauth_callback_url: # TBD https://jupyter.instid.ingress.mycluster/hub/oauth_callback
+        authorize_url: # TBD https://dex.instid.ingress.mycluster/dex/auth
+        token_url: # TBD https://dex.instid.ingress.mycluster/dex/token
+        userdata_url: # TBD https://dex.instid.ingress.mycluster/dex/userinfo
+        validate_server_cert: true
+        admin_groups: # TBD (As list)
+        allowed_groups: # TBD (As list)
+        scope:
+          - openid
+          - profile
+          - email
+          - groups
+          - federated:id
+        username_key: name
+        http_request_kwargs:
+          ca_certs: /usr/local/etc/jupyterhub/dextls/ca.crt
+      JupyterHub:
+        authenticator_class: generic-oauth
+    extraEnv:
+      JUPYTER_ENABLE_LAB: "1"
+      OAUTH_CLIENT_ID:
+        valueFrom:
+          secretKeyRef:
+            name: jupyter-client-secret
+            key: clientId
+      OAUTH_CLIENT_SECRET:
+        valueFrom:
+          secretKeyRef:
+            name: jupyter-client-secret
+            key: clientSecret
+    extraVolumes:
+      - name: dex-ca
+        secret:
+          secretName: jupyter-dex-tls
+    extraVolumeMounts:
+      - name: dex-ca
+        mountPath: /usr/local/etc/jupyterhub/dextls
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - "ALL"
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+  singleuser:
+    storage:
+      type: dynamic
+      dynamic:
+        storageClass: # TBD
+      capacity: # TBD
+    image:
+      name: quay.io/jupyterhub/k8s-singleuser-sample
+      tag: "3.2.1"
+      pullPolicy: IfNotPresent
+#    extraPodConfig:
+#      securityContext:
+##        allowPrivilegeEscalation: false
+##        readOnlyRootFilesystem: true
+#        capabilities:
+#          drop:
+#            - "ALL"
+#        runAsNonRoot: true
+#        seccompProfile:
+#          type: RuntimeDefault
+  prePuller:
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - "ALL"
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    hook:
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+    pause:
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+  scheduling:
+    userScheduler:
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+    userPlaceholder:
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
+
+dex:
+  enabled: true
+  nameOverride: jupyter-dex
+  ingress:
+    host: # TBD dex.instid.ingress.mycluster
+    clusterIssuer: # TBD
+  connectors: # TBD
+  staticClients: # Unused
+  firstStaticClient:
+    name: "Jupyter UI gatekeeper"
+    id: "jupyter"
+    redirectURIs:  # TBD (As list)
+    # - https://jupyter.instid.ingress.mycluster/hub/oauth_callback
