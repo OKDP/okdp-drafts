@@ -1,0 +1,40 @@
+hub:
+  extraFiles:
+    jupyter_gateway_form:
+      mountPath: /usr/local/etc/jupyterhub/templates/jupyter_gateway/form.html
+      mode: 0644
+      stringData: {}
+singleuser:
+  # Use default container command starter which sources PYTHONPATH
+  cmd:
+  extraEnv:
+    EDITOR: "vim"
+    JUPYTER_ENABLE_LAB: "yes"   
+  profileList:
+  - display_name: "Minimal environment"
+    description: "To avoid too much bells and whistles: Python."
+    default: true
+    kubespawner_override:
+      image: jupyter/minimal-notebook:x86_64-2023-10-20
+  - display_name: "Datascience environment"
+    description: "If you want the additional bells and whistles: Python, R, and Julia."
+    kubespawner_override:
+      image: jupyter/datascience-notebook:x86_64-2023-10-20
+  - display_name: "Spark environment"
+    description: "The Jupyter Stacks spark image!"
+    kubespawner_override:
+      image: jupyter/pyspark-notebook:spark-3.2.1
+  - display_name: "Jupyter Entreprise Gateway"
+    description: "To launch remote kernels on behalf of your local/self hosted Jupyter Hub/Lab/Notebook"
+    slug: "jupyter-gateway"
+    profile_options:
+      image:
+        display_name: "Select PySpark kernel version"
+        choices:
+          elyra/kernel-spark-py:3.2.1:
+            display_name: "PySpark 3.2.1/Python 3.11"
+            default: true
+          elyra/kernel-spark-py:3.2.2:
+            display_name: "PySpark 3.2.2/Python 3.11"                 
+    kubespawner_override:
+      jupyter_gateway_url: http://enterprise-gateway.enterprise-gateway.svc.cluster.local:8888
