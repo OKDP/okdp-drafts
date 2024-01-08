@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ include "dex.name" . }}
+  name: {{ include "dex.name" . }}
+  namespace: {{ .Release.Namespace  }}
+  annotations:
+    configmap.reloader.stakater.com/reload: "{{ include "dex.name" . }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "dex.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "dex.name" . }}
+    spec:
+      serviceAccountName: {{ include "dex.name" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - image: {{ .Values.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        name: dex
+        command: ["/usr/local/bin/dex", "serve", "/etc/dex/cfg/config.yaml"]
+        env:
+          {{ if .Values.firstStaticClient.id }}
+          {{ with .Values.firstStaticClient }}
+          - name: CLIENT_SECRET_{{ .id | upper | replace "-" "_" }}
+            valueFrom:
+              secretKeyRef:
+                key: clientSecret
+                name: {{ .secretName | default (printf "%s-client-secret" .id)  }}
+          {{- end }}
+          {{- end }}
+          {{ range .Values.staticClients }}
+          - name: CLIENT_SECRET_{{ .id | upper | replace "-" "_" }}
+            valueFrom:
+              secretKeyRef:
+                key: clientSecret
+                name: {{ .secretName | default (printf "%s-client-secret" .id)  }}
+          {{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile:
+            type: RuntimeDefault
+        ports:
+          - name: http
+            containerPort: 5556
+        volumeMounts:
+          - name: config
+            mountPath: /etc/dex/cfg
+        resources:
+          {{ toYaml .Values.resources | nindent 10 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "dex.name" . }}
+            items:
+              - key: config.yaml
+                path: config.yaml

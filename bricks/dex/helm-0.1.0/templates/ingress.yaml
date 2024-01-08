@@ -1,0 +1,36 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "dex.name" . }}
+  namespace: {{ .Release.Namespace  }}
+  annotations:
+{{- if .Values.ingress.clusterIssuer }}
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer }}
+{{- else }}
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+{{- end }}
+  labels:
+    app: dex
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ required "'ingress.host' must be defined" .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "dex.name" . }}
+                port:
+                  number: 5556
+  {{ if .Values.ingress.clusterIssuer }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ include "dex.name" . }}-tls
+  {{ end }}
+
+

@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dex.name" . }}
+  namespace: {{ .Release.Namespace  }}
+  labels:
+    app: {{ include "dex.name" . }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5556
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: {{ include "dex.name" . }}
+

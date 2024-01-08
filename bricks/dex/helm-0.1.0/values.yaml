@@ -1,0 +1,56 @@
+
+nameOverride:
+
+image: ghcr.io/dexidp/dex:v2.36.0
+imagePullPolicy: IfNotPresent
+imagePullSecrets: []
+resources:
+  limits:
+    memory: 500Mi
+    cpu: "0.4"
+  requests:
+    memory: 500Mi
+    cpu: "0.2"
+
+storage:
+  type: kubernetes
+  config:
+    inCluster: true
+
+ingress:
+  host:
+  clusterIssuer:
+
+logger:
+  level: info
+
+connectors:
+
+# Static clients can be defined with staticClients list and/or one with firstStaticClient singleton.
+# firstStaticClient effectiveness is tested on 'id' field
+# An advantage of firstStaticClient is its properties can be spread over several values file and merged on deployment
+
+firstStaticClient:
+  name:
+  id:
+  redirectURIs:
+  # Optional. Default to <id>-client-secret
+  # This is NOT the secret itself, but the name of a k8s secret with a value 'clientSecret'.
+  secretName:
+
+
+staticClients:
+#  - name: "Web app"
+#  - id: web-app
+#    redirectURIs:
+#      - 'https://web-app.example.com/callback'
+#    # Optional. Default to <id>-client-secret
+#    # This is NOT the secret itself, but the name of a k8s secret with a value 'clientSecret'
+#    secretName: web-app-secret
+
+rawStaticClients:
+  - name: "Web app"
+    id: web-app
+    secret: xxxxxx
+    redirectURIs:
+      - 'https://web-app.example.com/callback'
